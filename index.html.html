@@ -41,7 +41,7 @@
     .share-btn.twitter { background: #1da1f2; color: white; }
     .share-btn.copy { background: #e2e8f0; color: var(--text); }
     .upload-section { margin-top: 24px; border-top: 1px dashed #cbd5e1; padding-top: 16px; text-align: center; }
-    .hidden { display: none; }
+    .hidden { display: none !important; }
     @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .score-display { font-size: 2.5rem; font-weight: bold; text-align: center; margin: 20px 0; color: var(--primary); }
     .badge { display: inline-block; background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; margin-bottom: 12px; }
@@ -69,13 +69,12 @@
     <h2 id="q-number">Pergunta 1/5</h2>
     <p class="question" id="q-text"></p>
     <div class="options" id="options-container"></div>
+    <div id="feedback-screen" class="feedback">
+      <h3 id="feedback-title"></h3>
+      <p id="feedback-text"></p>
+      <p class="analogy" id="feedback-analogy"></p>
+    </div>
     <button class="btn secondary hidden" id="next-btn" onclick="nextQuestion()">Próxima →</button>
-  </div>
-
-  <div id="feedback-screen" class="feedback">
-    <h3 id="feedback-title"></h3>
-    <p id="feedback-text"></p>
-    <p class="analogy" id="feedback-analogy"></p>
   </div>
 
   <div id="results-screen" class="hidden">
@@ -138,13 +137,18 @@ let score = 0;
 let answered = false;
 
 function startGame() {
+  console.log("Iniciando jogo...");
   document.getElementById('welcome-screen').classList.add('hidden');
   document.getElementById('quiz-screen').classList.remove('hidden');
   loadQuestion();
 }
 
 function loadQuestion() {
-  if (currentQ >= questions.length) { showResults(); return; }
+  console.log("Carregando pergunta", currentQ);
+  if (currentQ >= questions.length) { 
+    showResults(); 
+    return; 
+  }
   answered = false;
   const q = questions[currentQ];
   document.getElementById('q-number').textContent = `Pergunta ${currentQ + 1}/${questions.length}`;
@@ -246,6 +250,8 @@ function share(platform) {
     window.open(shareUrl, '_blank', 'width=600,height=400');
   }
 }
+
+console.log("Jogo carregado com sucesso!");
 </script>
 
 </body>
