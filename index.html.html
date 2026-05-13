@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jogo de Estudo: Leis Fiscais</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --success: #16a34a;
+      --error: #dc2626;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --text-light: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+    .container { background: var(--card); border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); width: 100%; max-width: 600px; padding: 24px; position: relative; }
+    h1, h2 { text-align: center; margin-bottom: 16px; }
+    .progress { height: 6px; background: #e2e8f0; border-radius: 3px; margin: 12px 0; overflow: hidden; }
+    .progress-bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; }
+    .question { font-size: 1.1rem; margin-bottom: 20px; line-height: 1.5; }
+    .options { display: flex; flex-direction: column; gap: 10px; }
+    .option-btn { padding: 14px; border: 2px solid #e2e8f0; border-radius: 10px; background: #fff; cursor: pointer; text-align: left; font-size: 1rem; transition: all 0.2s; }
+    .option-btn:hover { border-color: var(--primary); background: #f0f7ff; }
+    .option-btn.selected { border-color: var(--primary); background: #dbeafe; }
+    .option-btn.correct { border-color: var(--success); background: #dcfce7; }
+    .option-btn.incorrect { border-color: var(--error); background: #fee2e2; }
+    .feedback { margin-top: 20px; padding: 16px; background: #f1f5f9; border-radius: 10px; display: none; }
+    .feedback.show { display: block; animation: slideIn 0.3s ease; }
+    .analogy { font-style: italic; color: var(--text-light); margin-top: 8px; border-left: 3px solid var(--primary); padding-left: 10px; }
+    .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-size: 1rem; cursor: pointer; width: 100%; margin-top: 16px; transition: background 0.2s; }
+    .btn:hover { background: #1d4ed8; }
+    .btn.secondary { background: #64748b; }
+    .btn.secondary:hover { background: #475569; }
+    .share-box { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+    .share-btn { flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: 500; text-align: center; }
+    .share-btn.whatsapp { background: #25d366; color: white; }
+    .share-btn.facebook { background: #1877f2; color: white; }
+    .share-btn.twitter { background: #1da1f2; color: white; }
+    .share-btn.copy { background: #e2e8f0; color: var(--text); }
+    .upload-section { margin-top: 24px; border-top: 1px dashed #cbd5e1; padding-top: 16px; text-align: center; }
+    .hidden { display: none; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .score-display { font-size: 2.5rem; font-weight: bold; text-align: center; margin: 20px 0; color: var(--primary); }
+    .badge { display: inline-block; background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div id="welcome-screen">
+    <span class="badge">Lei 19/14 - Código do Imposto Industrial</span>
+    <h1>📚 Jogo de Estudo Fiscal</h1>
+    <p style="text-align:center; color:var(--text-light); margin-bottom:20px;">
+      Teste os seus conhecimentos sobre legislação fiscal. Cada resposta inclui uma explicação com analogias para facilitar a memorização.
+    </p>
+    <button class="btn" onclick="startGame()">Começar Quiz</button>
+    <div class="upload-section">
+      <p style="font-size:0.9rem; color:var(--text-light); margin-bottom:10px;">🔄 Atualizar conteúdo?</p>
+      <input type="file" id="json-upload" accept=".json" onchange="loadCustomQuestions(event)">
+      <p style="font-size:0.8rem; color:#64748b; margin-top:6px;">Carregue um ficheiro .json com perguntas</p>
+    </div>
+  </div>
+
+  <div id="quiz-screen" class="hidden">
+    <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
+    <h2 id="q-number">Pergunta 1/5</h2>
+    <p class="question" id="q-text"></p>
+    <div class="options" id="options-container"></div>
+    <button class="btn secondary hidden" id="next-btn" onclick="nextQuestion()">Próxima →</button>
+  </div>
+
+  <div id="feedback-screen" class="feedback">
+    <h3 id="feedback-title"></h3>
+    <p id="feedback-text"></p>
+    <p class="analogy" id="feedback-analogy"></p>
+  </div>
+
+  <div id="results-screen" class="hidden">
+    <h1>🏆 Resultado Final</h1>
+    <div class="score-display" id="final-score">0/5</div>
+    <p style="text-align:center; margin-bottom:20px;" id="result-msg"></p>
+    <button class="btn" onclick="restartGame()">Jogar Novamente</button>
+    <div class="share-box">
+      <button class="share-btn whatsapp" onclick="share('whatsapp')">WhatsApp</button>
+      <button class="share-btn facebook" onclick="share('facebook')">Facebook</button>
+      <button class="share-btn twitter" onclick="share('twitter')">Twitter/X</button>
+      <button class="share-btn copy" onclick="share('copy')">Copiar Link</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Banco de dados padrão (baseado na Lei 19/14 do PDF)
+const defaultQuestions = [
+  {
+    question: "Qual é a taxa geral do Imposto Industrial em Angola?",
+    options: ["15%", "25%", "30%", "35%"],
+    correct: 2,
+    explanation: "A taxa geral do Imposto Industrial é de 30%, conforme o Artigo 64.º, n.º 1 da Lei 19/14.",
+    analogy: "Imagine que o imposto funciona como uma 'taxa de estacionamento' padrão. Assim como a maioria dos parques cobra um valor base fixo, o Estado aplica 30% sobre os lucros das empresas como regra geral."
+  },
+  {
+    question: "O que caracteriza obrigatoriamente o enquadramento no Grupo A?",
+    options: ["Empresas com capital social ≥ 2.000.000 Kz ou proveitos ≥ 500.000.000 Kz", "Todas as microempresas", "Empresas que optarem por não ter contabilidade", "Apenas empresas públicas"],
+    correct: 0,
+    explanation: "O Artigo 8.º obriga ao Grupo A empresas públicas, sociedades com capital ≥ 2M Kz ou proveitos ≥ 500M Kz, e sucursais de não residentes.",
+    analogy: "O Grupo A é como a 'primeira classe' dos contribuintes. Assim como voos de primeira classe exigem check-in mais detalhado e documentos completos, o Grupo A exige contabilidade organizada e prestações mais robustas."
+  },
+  {
+    question: "Como são tratados os custos indevidamente documentados?",
+    options: ["São totalmente aceites", "São aceites com 50% de desconto", "Não são dedutíveis e sofrem tributação autónoma a 2%", "São tributados a 30%"],
+    correct: 2,
+    explanation: "Segundo o Artigo 17.º, n.º 2, custos indevidamente documentados não são dedutíveis e são tributados autonomamente a 2% do seu valor.",
+    analogy: "Pense como um recibo de restaurante borrado. O fiscal não consegue ler os detalhes, então em vez de aceitar a despesa, aplica uma 'multa simbólica' de 2% para incentivar a organização documental."
+  },
+  {
+    question: "Qual o prazo para apresentação da Declaração Modelo 1 pelo Grupo A?",
+    options: ["Abril", "Maio", "Junho", "Julho"],
+    correct: 1,
+    explanation: "O Artigo 51.º, n.º 1 estabelece que os contribuintes do Grupo A devem apresentar a declaração até ao final de Maio.",
+    analogy: "É como o 'encerramento do ano letivo'. Assim como as escolas fecham notas em maio para preparar o verão, as empresas do Grupo A fecham e entregam as declarações fiscais em maio para evitar congestionamento administrativo."
+  },
+  {
+    question: "Qual a taxa aplicável a serviços acidentais prestados por entidades sem sede em Angola?",
+    options: ["2%", "6,5%", "15%", "30%"],
+    correct: 1,
+    explanation: "O Artigo 64.º, n.º 7 e o Capítulo VII estabelecem a taxa liberatória de 6,5% para serviços acidentais de não residentes.",
+    analogy: "É como um 'bilhete de visita rápido'. Se um artista estrangeiro vem actuar por 2 dias, o país não cobra o imposto completo, mas sim uma taxa fixa de 6,5% para simplificar e garantir a arrecadação sem burocracia."
+  }
+];
+
+let questions = [...defaultQuestions];
+let currentQ = 0;
+let score = 0;
+let answered = false;
+
+function startGame() {
+  document.getElementById('welcome-screen').classList.add('hidden');
+  document.getElementById('quiz-screen').classList.remove('hidden');
+  loadQuestion();
+}
+
+function loadQuestion() {
+  if (currentQ >= questions.length) { showResults(); return; }
+  answered = false;
+  const q = questions[currentQ];
+  document.getElementById('q-number').textContent = `Pergunta ${currentQ + 1}/${questions.length}`;
+  document.getElementById('q-text').textContent = q.question;
+  document.getElementById('progress-bar').style.width = `${((currentQ)/questions.length)*100}%`;
+  
+  const container = document.getElementById('options-container');
+  container.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.textContent = opt;
+    btn.onclick = () => checkAnswer(i, btn);
+    container.appendChild(btn);
+  });
+  
+  document.getElementById('next-btn').classList.add('hidden');
+  document.getElementById('feedback-screen').classList.remove('show');
+}
+
+function checkAnswer(selected, btn) {
+  if (answered) return;
+  answered = true;
+  const q = questions[currentQ];
+  const isCorrect = selected === q.correct;
+  if (isCorrect) score++;
+  
+  document.querySelectorAll('.option-btn').forEach((b, i) => {
+    b.classList.remove('selected');
+    if (i === q.correct) b.classList.add('correct');
+    else if (i === selected && !isCorrect) b.classList.add('incorrect');
+  });
+  
+  const fb = document.getElementById('feedback-screen');
+  document.getElementById('feedback-title').textContent = isCorrect ? '✅ Correto!' : '❌ Incorreto';
+  document.getElementById('feedback-text').textContent = q.explanation;
+  document.getElementById('feedback-analogy').textContent = `💡 Analogia: ${q.analogy}`;
+  fb.classList.add('show');
+  
+  document.getElementById('next-btn').classList.remove('hidden');
+}
+
+function nextQuestion() {
+  currentQ++;
+  loadQuestion();
+}
+
+function showResults() {
+  document.getElementById('quiz-screen').classList.add('hidden');
+  document.getElementById('results-screen').classList.remove('hidden');
+  document.getElementById('final-score').textContent = `${score}/${questions.length}`;
+  const msg = score === questions.length ? "🌟 Excelente! Domina a matéria!" : 
+              score >= questions.length/2 ? "👍 Bom trabalho! Revise os erros para melhorar." : 
+              "📖 Continue a estudar. A repetição leva à maestria!";
+  document.getElementById('result-msg').textContent = msg;
+}
+
+function restartGame() {
+  currentQ = 0;
+  score = 0;
+  document.getElementById('results-screen').classList.add('hidden');
+  document.getElementById('welcome-screen').classList.remove('hidden');
+}
+
+function loadCustomQuestions(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (Array.isArray(data) && data.length > 0) {
+        questions = data;
+        alert(`✅ Carregadas ${data.length} novas perguntas. Clique em "Começar Quiz" para jogar.`);
+      } else {
+        alert('❌ Formato inválido. O ficheiro deve ser um array de perguntas.');
+      }
+    } catch (err) {
+      alert('❌ Erro ao ler o ficheiro JSON.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function share(platform) {
+  const url = window.location.href;
+  const text = `Testei os meus conhecimentos sobre a Lei 19/14 (Código do Imposto Industrial) e acertei ${score}/${questions.length}! Joga também: `;
+  
+  if (navigator.share && platform === 'native') {
+    navigator.share({ title: 'Jogo de Estudo Fiscal', text, url });
+  } else {
+    let shareUrl = '';
+    switch(platform) {
+      case 'whatsapp': shareUrl = `https://wa.me/?text=${encodeURIComponent(text + url)}`; break;
+      case 'facebook': shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`; break;
+      case 'twitter': shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`; break;
+      case 'copy': navigator.clipboard.writeText(text + url).then(() => alert('✅ Link copiado!')); return;
+    }
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+  }
+}
+</script>
+
+</body>
+</html>
